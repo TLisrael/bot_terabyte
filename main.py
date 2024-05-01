@@ -13,6 +13,11 @@ import sqlite3
 dotenv.load_dotenv()
 API_KEY = os.getenv("API_KEY")
 pb = PushBullet(API_KEY)
+
+### Modificar os elementos do web scrapping para que o programa rode novamente.
+### Remover e criar o novo venv
+### Limpar código e remover partes insignificantes
+## Atualmente o programa não está funcional
 def criar_tabela():
     conn = sqlite3.connect('precos.db')
     cursor = conn.cursor()
