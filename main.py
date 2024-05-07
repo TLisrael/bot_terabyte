@@ -10,14 +10,11 @@ from selenium.common.exceptions import NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
 from pushbullet import PushBullet
 import sqlite3
+
 dotenv.load_dotenv()
 API_KEY = os.getenv("API_KEY")
 pb = PushBullet(API_KEY)
 
-### Modificar os elementos do web scrapping para que o programa rode novamente.
-### Remover e criar o novo venv
-### Limpar código e remover partes insignificantes
-## Atualmente o programa não está funcional
 def criar_tabela():
     conn = sqlite3.connect('precos.db')
     cursor = conn.cursor()
@@ -25,6 +22,7 @@ def criar_tabela():
                         (url TEXT PRIMARY KEY, nome VARCHAR, preco REAL, menor_preco REAL, maior_preco REAL, categoria TEXT)''')
     conn.commit()
     conn.close()
+
 def atualizar_preco(url, nome, preco, categoria):
     conn = sqlite3.connect('precos.db')
     cursor = conn.cursor()
@@ -47,18 +45,17 @@ def atualizar_preco(url, nome, preco, categoria):
             print(f'Preço do produto {nome} foi atualizado! Acesse o banco de dados para mais detalhes.')
     conn.commit()
     conn.close()
-# class tit-prod 
-# class val-prod valVista
-def verifica_preco(url, categoria):
-    chrome_options = Options()
-    chrome_options.add_argument("--window-position=-3000,0")
-    driver_service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=driver_service, options=chrome_options)
-    time.sleep(5)
-    driver.get(url)
-    time.sleep(15)
 
+def verifica_preco(url, categoria):
     try:
+        chrome_options = Options()
+        chrome_options.add_argument("--window-position=-3000,0")
+        driver_service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=driver_service, options=chrome_options)
+        time.sleep(5)
+        driver.get(url)
+        time.sleep(15)
+
         nome_element = driver.find_element(By.CSS_SELECTOR, '.tit-prod')
         preco_element = driver.find_element(By.CSS_SELECTOR, '.valVista')
         tbt_avise_elements = driver.find_elements(By.CSS_SELECTOR, '.tbt_avise')
@@ -71,16 +68,25 @@ def verifica_preco(url, categoria):
             atualizar_preco(url, nome, preco, categoria)
         else:
             print('Fora de estoque')
-    except NoSuchElementException:
-        print('Elemento não encontrado')
+    except NoSuchElementException as e:
+        print(f'Elemento não encontrado: {e}')
+    except Exception as e:
+        print(f'Ocorreu um erro durante a verificação do preço: {e}')
+    finally:
+        driver.quit()
 
 def agendando_notificacao(categorias):
     for categoria, urls in categorias.items():
         for url in urls:
             schedule.every(1).minutes.do(verifica_preco, url, categoria)
+            print(f"Tarefa agendada para a URL: {url} na categoria: {categoria}")
     while True:
-        schedule.run_pending()
-        time.sleep(3)
+        try:
+            schedule.run_pending()
+            time.sleep(3)
+        except Exception as e:
+            print(f"Ocorreu um erro durante a execução da tarefa agendada: {e}")
+
 criar_tabela()
 categorias = {
     'CPU': [
